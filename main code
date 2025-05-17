@@ -1,0 +1,56 @@
+# STEP 1: Install required libraries (only run this once in terminal, not in script)
+# pip install tensorflow tensorflow_hub matplotlib pillow
+
+# STEP 2: Import libraries
+import tensorflow as tf
+import tensorflow_hub as hub
+import numpy as np
+from PIL import Image
+import matplotlib.pyplot as plt
+import os
+
+# STEP 3: Set your image file paths
+content_path = "pp.jpg"    # Replace with your actual image file path
+style_path = "star.jpg"    # Replace with your actual image file path
+
+# STEP 4: Image loading function
+def load_img(path_to_img):
+    max_dim = 512
+    img = Image.open(path_to_img).convert('RGB')
+    img = img.resize((max_dim, max_dim))
+    img = np.array(img) / 255.0
+    img = tf.image.convert_image_dtype(img, tf.float32)
+    img = img[tf.newaxis, :]
+    return img
+
+def tensor_to_image(tensor):
+    tensor = tensor * 255
+    tensor = tf.clip_by_value(tensor, 0, 255)
+    tensor = tf.cast(tensor, tf.uint8)
+    return Image.fromarray(tensor.numpy()[0])
+
+# STEP 5: Load content and style images
+if not os.path.exists(content_path) or not os.path.exists(style_path):
+    raise FileNotFoundError("Make sure both content and style images exist in the folder.")
+
+content_image = load_img(content_path)
+style_image = load_img(style_path)
+
+# STEP 6: Load the pre-trained TensorFlow Hub model
+print("Loading model...")
+hub_model = hub.load('https://tfhub.dev/google/magenta/arbitrary-image-stylization-v1-256/2')
+
+# STEP 7: Apply style transfer
+print("Applying style transfer...")
+stylized_image = hub_model(content_image, style_image)[0]
+result = tensor_to_image(stylized_image)
+
+# STEP 8: Display and save result
+output_filename = "stylized_output.jpg"
+result.save(output_filename)
+print(f"✅ Output image saved as: {output_filename}")
+
+plt.imshow(result)
+plt.axis('off')
+plt.title("🎨 Stylized Image")
+plt.show()
